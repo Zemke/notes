@@ -11,25 +11,46 @@
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon"/>
   <script src="/vendor/vue.js"></script>
   <script>
+    const query = async query =>
+      (await fetch("/graphql", {
+        method: 'POST',
+        body: JSON.stringify({query}),
+        headers: [["Content-Type", 'application/json']]
+      })).json();
+
+    const notesPromise = query("{notes {id, content}}");
+
     let app;
 
-    function letsVue() {
+    async function letsVue() {
       app = new Vue({
         el: '#app',
         data: {
           message: 'Hello Vue!',
-          notes: []
+          notes: (await notesPromise).data.notes
         },
-      })
-    }
+        methods: {
+          save: async function (id, elem) {
+            try {
+              const content = elem.innerText.trim().split('\n');
+              const res = await query(`mutation { updateNote(id: ${id}, content: ${JSON.stringify(content)}) { id, content } }`);
+              this.notes.map(note => {
+                if (note.id === id) {
+                  elem.innerHTML = res.data.updateNote.content.join('<br>');
+                  note.content = res.data.updateNote.content;
+                }
+                return note;
+              })
+            } catch (err) {
+              alert("Error: " + err)
+            }
+          }
+        }
+      });
 
-    fetch("/graphql", {
-      method: 'POST',
-      body: JSON.stringify({"query": "{notes {id, content}}"}),
-      headers: [["Content-Type", 'application/json']]
-    })
-      .then(res => res.json())
-      .then(res => app.notes = res.data.notes)
+      app.notes.forEach(note =>
+        document.getElementById(`note${note.id}`).innerHTML = note.content.join('<br>'))
+    }
   </script>
   <style>
     * {
@@ -61,14 +82,21 @@
       font-size: 1rem;
       width: 20rem;
     }
+
+    .note:focus {
+      outline: none;
+      background-color: rgba(255, 255, 255, .1);
+    }
   </style>
 </head>
 <body onload="letsVue()">
 
 <div id="app">
   <div class="notes">
-    <div contenteditable v-for="note in notes" class="note">
-      {{ note.content }}
+    <div contenteditable
+         :id="'note'+note.id"
+         v-on:blur="save(note.id, $event.target)"
+         v-for="note in notes" class="note">
     </div>
   </div>
 </div>

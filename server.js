@@ -2,7 +2,6 @@ const express = require('express');
 const graphqlHTTP = require('express-graphql');
 const {buildSchema} = require('graphql');
 const fs = require('fs');
-const path = require('path');
 
 const schema = buildSchema(`
   type Query {
@@ -11,17 +10,19 @@ const schema = buildSchema(`
   },
   type Note {
     id: Int
-    content: String
+    content: [String]
   }
   type Mutation {
-    updateNote(id: Int!, content: String!): Note
+    updateNote(id: Int!, content: [String]!): Note
   }
 `);
 
-const dataDir = `/Users/zemke/Code/notes/data`;
+const dataDir = `${__dirname}/data`;
 
 const readNote = id =>
-  fs.readFileSync(`${dataDir}/${id}.md`, 'utf8');
+  fs.readFileSync(`${dataDir}/${id}.md`, 'utf8')
+    .trim()
+    .split('\n');
 
 const readNotes = () =>
   fs.readdirSync(`${dataDir}`, 'utf8')
@@ -29,13 +30,15 @@ const readNotes = () =>
     .map(file => ({
       id: parseInt(file.substr(0, file.length - 3)),
       content: fs.readFileSync(`${dataDir}/${file}`, 'utf8')
+        .trim()
+        .split('\n')
     }));
 
 const root = {
   note: ({id}) => ({id, content: readNote(id)}),
   notes: readNotes,
   updateNote: ({id, content}) => {
-    fs.writeFileSync(`${dataDir}/${id}.md`, content);
+    fs.writeFileSync(`${dataDir}/${id}.md`, content.join('\n'));
     return {id, content: readNote(id)};
   }
 };
