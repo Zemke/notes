@@ -1,6 +1,7 @@
 const express = require('express');
 const graphqlHTTP = require('express-graphql');
 const {buildSchema} = require('graphql');
+const fs = require('fs');
 
 const schema = buildSchema(`
   type Query {
@@ -16,14 +17,22 @@ const schema = buildSchema(`
   }
 `);
 
-const notes = [
-  {id: 1, content: "There's a lot to learn."},
-  {id: 2, content: "GraphQL solves all of our problems."},
-];
+const dataDir = `/Users/zemke/Code/notes/data`;
+
+const readNote = id =>
+  fs.readFileSync(`${dataDir}/${id}.md`, 'utf8');
+
+const readNotes = id =>
+  fs.readdirSync(`${dataDir}`, 'utf8')
+    .filter(file => file.endsWith('.md'))
+    .map(file => ({
+      id: parseInt(file.substr(0, file.length - 3)),
+      content: fs.readFileSync(`${dataDir}/${file}`, 'utf8')
+    }));
 
 const root = {
-  note: args => notes.filter(note => note.id === args.id)[0],
-  notes: () => notes,
+  note: ({id}) => ({id, content: readNote(id)}),
+  notes: readNotes,
   updateNote: ({id, content}) =>
     notes
       .map(note => {
