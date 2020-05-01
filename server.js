@@ -22,7 +22,7 @@ const dataDir = `/Users/zemke/Code/notes/data`;
 const readNote = id =>
   fs.readFileSync(`${dataDir}/${id}.md`, 'utf8');
 
-const readNotes = id =>
+const readNotes = () =>
   fs.readdirSync(`${dataDir}`, 'utf8')
     .filter(file => file.endsWith('.md'))
     .map(file => ({
@@ -33,13 +33,10 @@ const readNotes = id =>
 const root = {
   note: ({id}) => ({id, content: readNote(id)}),
   notes: readNotes,
-  updateNote: ({id, content}) =>
-    notes
-      .map(note => {
-        if (note.id === id) note.content = content;
-        return note;
-      })
-      .filter(note => note.id === id)[0]
+  updateNote: ({id, content}) => {
+    fs.writeFileSync(`${dataDir}/${id}.md`, content);
+    return {id, content: readNote(id)};
+  }
 };
 
 const app = express();
