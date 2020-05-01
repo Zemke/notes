@@ -22,18 +22,15 @@ const notes = [
 ];
 
 const root = {
-  note: args => notes.filter(user => user.id === args.id)[0],
+  note: args => notes.filter(note => note.id === args.id)[0],
   notes: () => notes,
   updateNote: ({id, content}) =>
     notes
       .map(note => {
-        if (note.id === id) {
-          note.name = name;
-          note.content = content;
-          return note;
-        }
+        if (note.id === id) note.content = content;
+        return note;
       })
-      .filter(user => user.id === id)[0]
+      .filter(note => note.id === id)[0]
 };
 
 const app = express();
