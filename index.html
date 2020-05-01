@@ -30,12 +30,22 @@
           notes: (await notesPromise).data.notes
         },
         methods: {
-          save: async function (id, elem) {
+          remove: async function (id, elem) {
             try {
-              const content = elem.innerText.trim().split('\n');
-              const res = await query(`mutation { updateNote(id: ${id}, content: ${JSON.stringify(content)}) { id, content } }`);
+              await query(`mutation { deleteNote(id: ${id}) }`);
+              elem.remove();
+            } catch (err) {
+              alert(err);
+            }
+          },
+          save: async function (id, elem) {
+            if (!elem.innerText.trim()) return this.remove(id, elem);
+
+            try {
+              const content = JSON.stringify(elem.innerText.trim().split('\n'));
+              const res = await query(`mutation { updateNote(id: ${id}, content: ${content}) { id, content } }`);
               this.notes.map(note => {
-                if (note.id === id) {
+                if (note.id === res.data.updateNote.id) {
                   elem.innerHTML = res.data.updateNote.content.join('<br>');
                   note.content = res.data.updateNote.content;
                 }

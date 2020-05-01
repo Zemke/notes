@@ -16,6 +16,7 @@ const schema = buildSchema(`
   }
   type Mutation {
     updateNote(id: Int!, content: [String]!): Note
+    deleteNote(id: Int!): Boolean
   }
 `);
 
@@ -26,22 +27,24 @@ const readNote = id =>
     .trim()
     .split('\n');
 
-const readNotes = () =>
-  fs.readdirSync(`${dataDir}`, 'utf8')
-    .filter(file => file.endsWith('.md'))
-    .map(file => ({
-      id: parseInt(file.substr(0, file.length - 3)),
-      content: fs.readFileSync(`${dataDir}/${file}`, 'utf8')
-        .trim()
-        .split('\n')
-    }));
-
 const root = {
   note: ({id}) => ({id, content: readNote(id)}),
-  notes: readNotes,
+  notes: () =>
+    fs.readdirSync(`${dataDir}`, 'utf8')
+      .filter(file => file.endsWith('.md'))
+      .map(file => ({
+        id: parseInt(file.substr(0, file.length - 3)),
+        content: fs.readFileSync(`${dataDir}/${file}`, 'utf8')
+          .trim()
+          .split('\n')
+      })),
   updateNote: ({id, content}) => {
     fs.writeFileSync(`${dataDir}/${id}.md`, content.join('\n'));
     return {id, content: readNote(id)};
+  },
+  deleteNote: args => {
+    fs.unlinkSync(`${dataDir}/${args.id}.md`);
+    return true;
   }
 };
 
