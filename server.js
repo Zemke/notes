@@ -2,6 +2,7 @@ const express = require('express');
 const graphqlHTTP = require('express-graphql');
 const {buildSchema} = require('graphql');
 const fs = require('fs');
+const path = require('path');
 
 const schema = buildSchema(`
   type Query {
@@ -45,7 +46,12 @@ app.use('/graphql', graphqlHTTP({
   rootValue: root,
   graphiql: true,
 }));
+app.get('/', (req, res) =>
+  res.sendFile('index.html', {root: __dirname}));
+app.get('/vendor/vue.js', (req, res) =>
+  res.sendFile('node_modules/vue/dist/vue.min.js', {root: __dirname}));
 const port = 4000;
-app.listen(port, () => console.log(`Now browse to localhost:${port}/graphql`));
+app.listen(port, () =>
+  console.log(`Now browse to localhost:${port}/graphql`));
 
 // curl -X POST 'http://localhost:4000/graphql' -H 'Content-Type: application/json' -d '{"query": "query getAllNotes {notes {id, content}}"}'

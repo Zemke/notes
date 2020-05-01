@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Notes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Jost&display=swap"
+        rel="stylesheet">
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon"/>
+  <script src="/vendor/vue.js"></script>
+  <script>
+    let app;
+
+    function letsVue() {
+      app = new Vue({
+        el: '#app',
+        data: {
+          message: 'Hello Vue!',
+          notes: []
+        },
+      })
+    }
+
+    fetch("/graphql", {
+      method: 'POST',
+      body: JSON.stringify({"query": "{notes {id, content}}"}),
+      headers: [["Content-Type", 'application/json']]
+    })
+      .then(res => res.json())
+      .then(res => app.notes = res.data.notes)
+  </script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      font-family: 'Jost', sans-serif;
+    }
+
+    html, body {
+      background-color: #1d1d1d;
+      color: #d5d5d5;
+      padding: 1rem;
+      font-family: 'Jost', sans-serif;
+    }
+
+    .notes {
+      display: flex;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .note {
+      background-color: rgba(255, 255, 255, .05);
+      border-radius: .2rem;
+      padding: .7rem .5rem;
+      margin-right: 1rem;
+      margin-bottom: 1rem;
+      display: inline-block;
+      font-size: 1rem;
+      width: 20rem;
+    }
+  </style>
+</head>
+<body onload="letsVue()">
+
+<div id="app">
+  <div class="notes">
+    <div contenteditable v-for="note in notes" class="note">
+      {{ note.content }}
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
