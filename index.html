@@ -30,6 +30,14 @@
           notes: (await notesPromise).data.notes
         },
         methods: {
+          create: async function () {
+            try {
+              const res = await query(`{newNote {id, content} }`);
+              this.notes.push(res.data.newNote);
+            } catch (err) {
+              alert(err);
+            }
+          },
           remove: async function (id, elem) {
             try {
               await query(`mutation { deleteNote(id: ${id}) }`);
@@ -97,6 +105,36 @@
       outline: none;
       background-color: rgba(255, 255, 255, .1);
     }
+
+    .text-center {
+      text-align: center;
+    }
+
+    button.add {
+      font-size: 2rem;
+      height: 3rem;
+      width: 3rem;
+      background-color: rgba(255, 255, 255, .2);
+      color: #d5d5d5;
+      border: none;
+      border-radius: 100%;
+      text-align: center;
+    }
+
+    button.add:hover {
+      cursor: pointer;
+    }
+
+    button.add:active {
+      outline: none;
+      color: #3e3e3e;
+      background-color: rgba(255, 255, 255, .3);
+    }
+
+    button.add:focus {
+      outline: none;
+      box-shadow: 0 0 5px white;
+    }
   </style>
 </head>
 <body onload="letsVue()">
@@ -108,6 +146,12 @@
          v-on:blur="save(note.id, $event.target)"
          v-for="note in notes" class="note">
     </div>
+  </div>
+  <div class="text-center">
+    <button class="add"
+            v-on:click="create()">
+      &plus;
+    </button>
   </div>
 </div>
 

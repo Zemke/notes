@@ -9,6 +9,7 @@ const schema = buildSchema(`
   type Query {
     note(id: Int!): Note
     notes: [Note]
+    newNote: Note
   },
   type Note {
     id: Int
@@ -45,7 +46,11 @@ const root = {
   deleteNote: args => {
     fs.unlinkSync(`${dataDir}/${args.id}.md`);
     return true;
-  }
+  },
+  newNote: () => ({
+    id: root.notes().map(note => note.id).sort().reverse()[0] + 1,
+    content: [""]
+  })
 };
 
 const app = express();
