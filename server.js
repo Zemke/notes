@@ -3,6 +3,8 @@ const graphqlHTTP = require('express-graphql');
 const {buildSchema} = require('graphql');
 const fs = require('fs');
 
+const port = process.argv[2] || 4000;
+
 const schema = buildSchema(`
   type Query {
     note(id: Int!): Note
@@ -53,7 +55,6 @@ app.get('/', (req, res) =>
   res.sendFile('index.html', {root: __dirname}));
 app.get('/vendor/vue.js', (req, res) =>
   res.sendFile('node_modules/vue/dist/vue.min.js', {root: __dirname}));
-const port = 4000;
 app.listen(port, () =>
   console.log(`Now browse to localhost:${port}/graphql`));
 
