@@ -61,8 +61,6 @@ app.use('/graphql', graphqlHTTP({
 }));
 app.get('/', (req, res) =>
   res.sendFile('index.html', {root: __dirname}));
-app.get('/vendor/vue.js', (req, res) =>
-  res.sendFile('node_modules/vue/dist/vue.min.js', {root: __dirname}));
 app.listen(port, () =>
   console.log(`Now browse to localhost:${port}/graphql`));
 

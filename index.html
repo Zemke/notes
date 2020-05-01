@@ -9,65 +9,62 @@
   <link href="https://fonts.googleapis.com/css2?family=Jost&display=swap"
         rel="stylesheet">
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon"/>
-  <script src="/vendor/vue.js"></script>
   <script>
-    const query = async query =>
-      (await fetch("/graphql", {
+    async function query(query) {
+      return (await (await fetch("/graphql", {
         method: 'POST',
         body: JSON.stringify({query}),
         headers: [["Content-Type", 'application/json']]
-      })).json();
+      })).json()).data;
+    }
 
-    const notesPromise = query("{notes {id, content}}");
+    async function create() {
+      try {
+        const res = await query(`{newNote {id, content} }`);
+        document.getElementById("notes").append(createNoteElement(res.newNote));
+      } catch (err) {
+        alert(err);
+      }
+    }
 
-    let app;
+    async function remove(id, elem) {
+      try {
+        await query(`mutation { deleteNote(id: ${id}) }`);
+        elem.remove();
+      } catch (err) {
+        alert(err);
+      }
+    }
 
-    async function letsVue() {
-      app = new Vue({
-        el: '#app',
-        data: {
-          message: 'Hello Vue!',
-          notes: (await notesPromise).data.notes
-        },
-        methods: {
-          create: async function () {
-            try {
-              const res = await query(`{newNote {id, content} }`);
-              this.notes.push(res.data.newNote);
-            } catch (err) {
-              alert(err);
-            }
-          },
-          remove: async function (id, elem) {
-            try {
-              await query(`mutation { deleteNote(id: ${id}) }`);
-              elem.remove();
-            } catch (err) {
-              alert(err);
-            }
-          },
-          save: async function (id, elem) {
-            if (!elem.innerText.trim()) return this.remove(id, elem);
+    async function save(id, elem) {
+      if (!elem.innerText.trim()) return remove(id, elem);
 
-            try {
-              const content = JSON.stringify(elem.innerText.trim().split('\n'));
-              const res = await query(`mutation { updateNote(id: ${id}, content: ${content}) { id, content } }`);
-              this.notes.map(note => {
-                if (note.id === res.data.updateNote.id) {
-                  elem.innerHTML = res.data.updateNote.content.join('<br>');
-                  note.content = res.data.updateNote.content;
-                }
-                return note;
-              })
-            } catch (err) {
-              alert("Error: " + err)
-            }
-          }
-        }
-      });
+      try {
+        const content = JSON.stringify(elem.innerText.trim().split('\n'));
+        const res = await query(
+          `mutation { updateNote(id: ${id}, content: ${content}) { id, content } }`);
+        // const elem = document.getElementById(`note${res.updateNote.id}`);
+        elem.innerHTML = res.updateNote.content.join('<br>');
+      } catch (err) {
+        alert("Error: " + err)
+      }
+    }
 
-      app.notes.forEach(note =>
-        document.getElementById(`note${note.id}`).innerHTML = note.content.join('<br>'))
+    function createNoteElement({id, content}) {
+      const elem = document.createElement('div');
+      elem.contentEditable = "true";
+      elem.classList.add("note");
+      elem.innerHTML = content.join('<br>');
+      elem.setAttribute("id", `note${id}`);
+      elem.onblur = e => save(id, e.target);
+      return elem;
+    }
+
+    async function onLoad() {
+      document
+        .getElementById("notes")
+        .append(...(await query("{notes {id, content}}")).notes
+          .map(note => createNoteElement(note)));
     }
   </script>
   <style>
@@ -84,7 +81,7 @@
       font-family: 'Jost', sans-serif;
     }
 
-    .notes {
+    #notes {
       display: flex;
       align-items: flex-start;
       flex-wrap: wrap;
@@ -137,19 +134,13 @@
     }
   </style>
 </head>
-<body onload="letsVue()">
+<body onload="onLoad()">
 
 <div id="app">
-  <div class="notes">
-    <div contenteditable
-         :id="'note'+note.id"
-         v-on:blur="save(note.id, $event.target)"
-         v-for="note in notes" class="note">
-    </div>
+  <div id="notes">
   </div>
   <div class="text-center">
-    <button class="add"
-            v-on:click="create()">
+    <button class="add" onclick="create()">
       &plus;
     </button>
   </div>
