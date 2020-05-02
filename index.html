@@ -33,6 +33,10 @@
       })).json()).data;
     }
 
+    function contentToHtml(content) {
+      return content.join('<br>');
+    }
+
     async function create() {
       try {
         const res = await query(`{newNote {id, content} }`);
@@ -58,8 +62,7 @@
         const content = JSON.stringify(elem.innerText.trim().split('\n'));
         const res = await query(
           `mutation { updateNote(id: ${id}, content: ${content}) { id, content } }`);
-        // const elem = document.getElementById(`note${res.updateNote.id}`);
-        elem.innerHTML = res.updateNote.content.join('<br>');
+        elem.innerHTML = contentToHtml(res.updateNote.content);
       } catch (err) {
         alert("Error: " + err)
       }
@@ -69,17 +72,30 @@
       const elem = document.createElement('div');
       elem.contentEditable = "true";
       elem.classList.add("note");
-      elem.innerHTML = content.join('<br>');
+
+      elem.innerHTML = contentToHtml(content);
       elem.setAttribute("id", `note${id}`);
       elem.onblur = e => save(id, e.target);
       return elem;
     }
 
     async function onLoad() {
-      document
-        .getElementById("notes")
-        .append(...(await query("{notes {id, content}}")).notes
+      const notesElem = document.getElementById("notes");
+      notesElem.append(
+        ...JSON.parse(window.localStorage.getItem('notes') || "[]")
           .map(note => createNoteElement(note)));
+      try {
+        const fetchedNotes = (await query("{notes {id, content}}")).notes;
+        window.localStorage.setItem('notes', JSON.stringify(fetchedNotes));
+        fetchedNotes.forEach(({id, content}) => {
+          const elem = document.getElementById(`note${id}`);
+          elem == null
+            ? notesElem.append(createNoteElement({id, content}))
+            : elem.innerHTML = contentToHtml(content);
+        })
+      } catch (err) {
+        alert("Notes could not be fetched and might therefore be outdated. Error: [" + err)
+      }
     }
   </script>
   <style>
