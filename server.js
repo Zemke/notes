@@ -1,7 +1,9 @@
 const express = require('express');
+const favicon = require('serve-favicon');
 const graphqlHTTP = require('express-graphql');
 const {buildSchema} = require('graphql');
 const fs = require('fs');
+const path = require('path');
 
 const port = process.argv[2] || 4000;
 
@@ -21,10 +23,10 @@ const schema = buildSchema(`
   }
 `);
 
-const dataDir = `${__dirname}/data`;
+const dataDir = path.join(__dirname, 'data');
 
 const readNote = id =>
-  fs.readFileSync(`${dataDir}/${id}.md`, 'utf8')
+  fs.readFileSync(path.join(dataDir, `${id}.md`), 'utf8')
     .trim()
     .split('\n');
 
@@ -35,16 +37,16 @@ const root = {
       .filter(file => file.endsWith('.md'))
       .map(file => ({
         id: parseInt(file.substr(0, file.length - 3)),
-        content: fs.readFileSync(`${dataDir}/${file}`, 'utf8')
+        content: fs.readFileSync(path.join(dataDir, file), 'utf8')
           .trim()
           .split('\n')
       })),
   updateNote: ({id, content}) => {
-    fs.writeFileSync(`${dataDir}/${id}.md`, content.join('\n'));
+    fs.writeFileSync(path.join(dataDir, `${id}.md`), content.join('\n'));
     return {id, content: readNote(id)};
   },
-  deleteNote: args => {
-    fs.unlinkSync(`${dataDir}/${args.id}.md`);
+  deleteNote: ({id}) => {
+    fs.unlinkSync(path.join(dataDir, `${id}.md`));
     return true;
   },
   newNote: () => ({
@@ -54,6 +56,7 @@ const root = {
 };
 
 const app = express();
+app.use(favicon(path.join(__dirname, 'favicon.ico')));
 app.use('/graphql', graphqlHTTP({
   schema: schema,
   rootValue: root,
@@ -61,6 +64,16 @@ app.use('/graphql', graphqlHTTP({
 }));
 app.get('/', (req, res) =>
   res.sendFile('index.html', {root: __dirname}));
+app.get('/sw.js', (req, res) =>
+  res.sendFile('sw.js', {root: __dirname}));
+app.get('/manifest.json', (req, res) =>
+  res.sendFile('manifest.json', {root: __dirname}));
+app.get('/icons/icon192.png', (req, res) =>
+  res.sendFile(path.join('icons', 'icon192.png'), {root: __dirname}));
+app.get('/icons/icon512.png', (req, res) =>
+  res.sendFile(path.join('icons', 'icon512.png'), {root: __dirname}));
+app.get('/icons/maskable.png', (req, res) =>
+  res.sendFile(path.join('icons', 'maskable.png'), {root: __dirname}));
 app.listen(port, () =>
   console.log(`Now browse to localhost:${port}/graphql`));
 
