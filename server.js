@@ -60,7 +60,7 @@ app.use(favicon(path.join(__dirname, 'favicon.ico')));
 app.use('/graphql', graphqlHTTP({
   schema: schema,
   rootValue: root,
-  graphiql: true,
+  graphiql: false,
 }));
 app.get('/', (req, res) =>
   res.sendFile('index.html', {root: __dirname}));
