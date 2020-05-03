@@ -65,7 +65,7 @@ app.post('/authentication', (req, res) => {
   if (req.body.password !== props.password) {
     return res.status(401).send('Wrong credentials.');
   }
-  return res.json({token: jwt.sign({}, props["jwtSecret"])})
+  return res.json({token: jwt.sign({}, props["jwtSecret"], {expiresIn: '30 days'})});
 });
 app.get('/', (req, res) =>
   res.sendFile('index.html', {root: __dirname}));
