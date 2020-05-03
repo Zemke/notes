@@ -14,19 +14,6 @@
         rel="stylesheet">
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon"/>
   <script>
-    (async () => {
-      const token = window.localStorage.getItem('authentication');
-      if (!token) {
-        const password = prompt("Authentication");
-        const res = await (fetch('/authentication', {
-          method: 'POST',
-          body: JSON.stringify({password}),
-          headers: [["Content-Type", 'application/json']]
-        }).then(res => res.json()));
-        window.localStorage.setItem('authentication', res.token);
-      }
-    })();
-
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
@@ -37,6 +24,54 @@
         }
       });
     }
+
+    (async () => {
+      await (async () => {
+        const token = window.localStorage.getItem('authentication');
+        let isAuthenticated = !!token;
+        while (!isAuthenticated) {
+          const password = prompt("Authentication");
+          if (password === null) break;
+          try {
+            const res = await (fetch('/authentication', {
+              method: 'POST',
+              body: JSON.stringify({password}),
+              headers: [["Content-Type", 'application/json']]
+            }).then(res => res.json()));
+            if (!!res.token) {
+              isAuthenticated = true;
+              window.localStorage.setItem('authentication', res.token);
+            } else {
+              isAuthenticated = false;
+            }
+          } catch (e) {
+            isAuthenticated = false;
+          }
+        }
+        return isAuthenticated
+          ? Promise.resolve(window.localStorage.getItem('authentication'))
+          : Promise.reject('cancelled authorization');
+      })();
+
+      window.addEventListener('load', async () => {
+        const notesElem = document.getElementById("notes");
+        notesElem.append(
+          ...JSON.parse(window.localStorage.getItem('notes') || "[]")
+            .map(note => createNoteElement(note)));
+        try {
+          const fetchedNotes = (await query("{notes {id, content}}")).notes;
+          window.localStorage.setItem('notes', JSON.stringify(fetchedNotes));
+          fetchedNotes.forEach(({id, content}) => {
+            const elem = document.getElementById(`note${id}`);
+            elem == null
+              ? notesElem.append(createNoteElement({id, content}))
+              : elem.innerHTML = contentToHtml(content);
+          })
+        } catch (err) {
+          alert("Notes could not be fetched and might therefore be outdated. Error: [" + err)
+        }
+      });
+    })();
 
     async function query(query) {
       return (await (await fetch("/graphql", {
@@ -93,25 +128,6 @@
       elem.setAttribute("id", `note${id}`);
       elem.onblur = e => save(id, e.target);
       return elem;
-    }
-
-    async function onLoad() {
-      const notesElem = document.getElementById("notes");
-      notesElem.append(
-        ...JSON.parse(window.localStorage.getItem('notes') || "[]")
-          .map(note => createNoteElement(note)));
-      try {
-        const fetchedNotes = (await query("{notes {id, content}}")).notes;
-        window.localStorage.setItem('notes', JSON.stringify(fetchedNotes));
-        fetchedNotes.forEach(({id, content}) => {
-          const elem = document.getElementById(`note${id}`);
-          elem == null
-            ? notesElem.append(createNoteElement({id, content}))
-            : elem.innerHTML = contentToHtml(content);
-        })
-      } catch (err) {
-        alert("Notes could not be fetched and might therefore be outdated. Error: [" + err)
-      }
     }
   </script>
   <style>
@@ -181,7 +197,7 @@
     }
   </style>
 </head>
-<body onload="onLoad()">
+<body>
 
 <div id="app">
   <div class="text-right">
