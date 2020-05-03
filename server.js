@@ -79,7 +79,7 @@ app.get('/icons/icon512.png', (req, res) =>
   res.sendFile(path.join('icons', 'icon512.png'), {root: __dirname}));
 app.get('/icons/maskable.png', (req, res) =>
   res.sendFile(path.join('icons', 'maskable.png'), {root: __dirname}));
-app.use(jwtMiddleware({secret: props["jwtSecret"]}).unless({path: ['/authentication', '/']}));
+app.use(jwtMiddleware({secret: props["jwtSecret"]}));
 app.use('/graphql', graphqlHTTP({
   schema: schema,
   rootValue: root,
