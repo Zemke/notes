@@ -67,6 +67,14 @@ app.post('/authentication', (req, res) => {
   }
   return res.json({token: jwt.sign({}, props["jwtSecret"], {expiresIn: '30 days'})});
 });
+app.post('/validate', (req, res) => {
+  try {
+    jwt.verify(req.body.token, props["jwtSecret"]);
+  } catch (e) {
+    res.status(400).send(e);
+  }
+  return res.json({token: req.body.token});
+});
 app.get('/', (req, res) =>
   res.sendFile('index.html', {root: __dirname}));
 app.get('/sw.js', (req, res) =>

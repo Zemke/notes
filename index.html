@@ -25,10 +25,21 @@
       });
     }
 
-    (async () => {
+    window.addEventListener('load', async () => {
       await (async () => {
         const token = window.localStorage.getItem('authentication');
-        let isAuthenticated = !!token;
+        let isAuthenticated;
+        if (token) {
+          try {
+            isAuthenticated = !!(await (await fetch('/validate', {
+              method: 'POST',
+              body: JSON.stringify({token}),
+              headers: [["Content-Type", 'application/json']]
+            })).json()).token;
+          } catch (e) {
+            isAuthenticated = false;
+          }
+        }
         while (!isAuthenticated) {
           const password = prompt("Authentication");
           if (password === null) break;
@@ -53,25 +64,23 @@
           : Promise.reject('cancelled authorization');
       })();
 
-      window.addEventListener('load', async () => {
-        const notesElem = document.getElementById("notes");
-        notesElem.append(
-          ...JSON.parse(window.localStorage.getItem('notes') || "[]")
-            .map(note => createNoteElement(note)));
-        try {
-          const fetchedNotes = (await query("{notes {id, content}}")).notes;
-          window.localStorage.setItem('notes', JSON.stringify(fetchedNotes));
-          fetchedNotes.forEach(({id, content}) => {
-            const elem = document.getElementById(`note${id}`);
-            elem == null
-              ? notesElem.append(createNoteElement({id, content}))
-              : elem.innerHTML = contentToHtml(content);
-          })
-        } catch (err) {
-          alert("Notes could not be fetched and might therefore be outdated. Error: [" + err)
-        }
-      });
-    })();
+      const notesElem = document.getElementById("notes");
+      notesElem.append(
+        ...JSON.parse(window.localStorage.getItem('notes') || "[]")
+          .map(note => createNoteElement(note)));
+      try {
+        const fetchedNotes = (await query("{notes {id, content}}")).notes;
+        window.localStorage.setItem('notes', JSON.stringify(fetchedNotes));
+        fetchedNotes.forEach(({id, content}) => {
+          const elem = document.getElementById(`note${id}`);
+          elem == null
+            ? notesElem.append(createNoteElement({id, content}))
+            : elem.innerHTML = contentToHtml(content);
+        })
+      } catch (err) {
+        alert("Notes could not be fetched and might therefore be outdated. Error: [" + err)
+      }
+    });
 
     async function query(query) {
       return (await (await fetch("/graphql", {
