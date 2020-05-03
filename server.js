@@ -1,7 +1,9 @@
 const express = require('express');
 const favicon = require('serve-favicon');
 const graphqlHTTP = require('express-graphql');
+const jwtMiddleware = require('express-jwt');
 const {buildSchema} = require('graphql');
+const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
 
@@ -56,12 +58,15 @@ const root = {
 };
 
 const app = express();
+const props = JSON.parse(fs.readFileSync(path.join(__dirname, `.props.json`), 'utf8'));
 app.use(favicon(path.join(__dirname, 'favicon.ico')));
-app.use('/graphql', graphqlHTTP({
-  schema: schema,
-  rootValue: root,
-  graphiql: false,
-}));
+app.use(express.json());
+app.post('/authentication', (req, res) => {
+  if (req.body.password !== props.password) {
+    return res.status(401).send('Wrong credentials.');
+  }
+  return res.json({token: jwt.sign({}, props["jwtSecret"])})
+});
 app.get('/', (req, res) =>
   res.sendFile('index.html', {root: __dirname}));
 app.get('/sw.js', (req, res) =>
@@ -74,6 +79,12 @@ app.get('/icons/icon512.png', (req, res) =>
   res.sendFile(path.join('icons', 'icon512.png'), {root: __dirname}));
 app.get('/icons/maskable.png', (req, res) =>
   res.sendFile(path.join('icons', 'maskable.png'), {root: __dirname}));
+app.use(jwtMiddleware({secret: props["jwtSecret"]}).unless({path: ['/authentication', '/']}));
+app.use('/graphql', graphqlHTTP({
+  schema: schema,
+  rootValue: root,
+  graphiql: false,
+}));
 app.listen(port, () =>
   console.log(`Now browse to localhost:${port}/graphql`));
 
